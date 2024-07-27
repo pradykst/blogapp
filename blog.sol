@@ -21,6 +21,15 @@ contract BlogApp {
         uint256 likes;
         uint256 report;
     }
+
+    struct UserProfile {
+        string displayName;
+        string bio;
+    }
+
+
+
+    mapping(address => UserProfile) public profiles;
     mapping(address => Blog[] ) public blogs;
     address public owner;
 
@@ -38,6 +47,12 @@ contract BlogApp {
         require(msg.sender == owner, "YOU ARE NOT THE OWNER!");
         _;
     }
+    
+    modifier onlyRegistered(){
+        UserProfile memory userProfileTemp = profiles[msg.sender];
+        require(bytes(userProfileTemp.displayName).length > 0, "USER NOT REGISTERED");
+        _;
+    }
 
     function changeBlogLength(uint16 newBlogLength) public onlyOwner {
         MAX_BLOG_LENGTH = newBlogLength;
@@ -47,7 +62,15 @@ contract BlogApp {
         MAX_REPORTS = newReports;
     }
 
-    function createBlog(string memory _title,string memory _blog) public {
+    function setProfile(string memory _displayName, string memory _bio) public {
+        profiles[msg.sender] = UserProfile(_displayName, _bio);
+    }
+
+    function getProfile(address _user) public view returns (UserProfile memory) {
+        return profiles[_user];
+    }
+
+    function createBlog(string memory _title,string memory _blog) public onlyRegistered {
         require(bytes(_blog).length <= MAX_BLOG_LENGTH, "Blog is too long!" );
 
         Blog memory newBlog = Blog({
@@ -66,7 +89,7 @@ contract BlogApp {
         emit BlogCreated(newBlog.id, newBlog.author, newBlog.content, newBlog.timestamp);
     }
 
-    function likeBLog(address author, uint256 id) external {  
+    function likeBLog(address author, uint256 id) external onlyRegistered {  
         require(blogs[author][id].id == id, "BLOG DOES NOT EXIST");
 
         blogs[author][id].likes++;
@@ -75,7 +98,7 @@ contract BlogApp {
         emit BlogLiked(msg.sender, author, id, blogs[author][id].likes);
     }
 
-    function reportBlog(address author, uint256 id) external {  
+    function reportBlog(address author, uint256 id) external onlyRegistered {  
         require(blogs[author][id].id == id, "BLOG DOES NOT EXIST");
 
         blogs[author][id].report++;
@@ -84,7 +107,7 @@ contract BlogApp {
         emit BlogReported(msg.sender, author, id, blogs[author][id].report);
     }
 
-    function unlikeBlog(address author, uint256 id) external {
+    function unlikeBlog(address author, uint256 id) external onlyRegistered {
         require(blogs[author][id].id == id, "BLOG DOES NOT EXIST");
         require(blogs[author][id].likes > 0, "BLOG HAS NO LIKES");
         
