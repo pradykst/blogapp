@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 
 //create accounts with nicknames(just like struct blog?)
-//one like per user?owner cant like post(require )
+//one like per user?creator cant like post(require )
 //remove blog if more reportss and one report per user
 //integrate with frontend?
 
@@ -31,6 +31,9 @@ contract BlogApp {
 
     mapping(address => UserProfile) public profiles;
     mapping(address => Blog[] ) public blogs;
+    mapping(address => uint256[] ) public likedBlogs;
+    mapping(address => uint256[] ) public reportedBlogs;
+    mapping(address => uint256[] ) public unlikedBlogs;
     address public owner;
 
     // Define the events
@@ -38,6 +41,7 @@ contract BlogApp {
     event BlogLiked(address liker, address blogAuthor, uint256 blogId, uint256 newLikeCount);
     event BlogReported(address reporter, address blogAuthor, uint256 blogId, uint256 newReportCount);
     event BlogUnliked(address unliker, address blogAuthor, uint256 blogId, uint256 newLikeCount);
+    event BlogDeleted(address deleter, address blogAuthor, uint256 blogId)
 
     constructor() {
         owner = msg.sender;
@@ -89,29 +93,72 @@ contract BlogApp {
         emit BlogCreated(newBlog.id, newBlog.author, newBlog.content, newBlog.timestamp);
     }
 
-    function likeBLog(address author, uint256 id) external onlyRegistered {  
+    function likeBlog(address author, uint256 id) external onlyRegistered {  
         require(blogs[author][id].id == id, "BLOG DOES NOT EXIST");
+        require(author!=profiles[msg.sender], "creator cant like the post")
+        bool memory alreadyLiked=false
+
+        for (uint i = 0; i < likedBlogs[msg.sender].length; i++) {
+            if (likedBlogs[msg.sender][i] == id) {
+                alreadyLiked=true;
+            }
+        }
+        require(!alreadyLiked,"Blog cant be liked again")
+        
+
+
 
         blogs[author][id].likes++;
+        likedBlogs[msg.sender].push(id);
 
-        // Emit the TweetLiked event
         emit BlogLiked(msg.sender, author, id, blogs[author][id].likes);
     }
 
     function reportBlog(address author, uint256 id) external onlyRegistered {  
         require(blogs[author][id].id == id, "BLOG DOES NOT EXIST");
+        require(author!=profiles[msg.sender], "creator cant like the post")
+        bool memory alreadyReported=false
 
-        blogs[author][id].report++;
+        for (uint i = 0; i < reportedBlogs[msg.sender].length; i++) {
+            if (reportedBlogs[msg.sender][i] == id) {
+                alreadyReported=true;
+            }
+        }
+        require(!alreadyReported,"Blog cant be reported again")
 
-        
-        emit BlogReported(msg.sender, author, id, blogs[author][id].report);
+        if(blogs[author][id].report>=MAX_REPORTS){
+            delete blogs[author][id]
+            emit BlogDeleted(msg.sender, author, id);  //see
+        }
+
+        else{
+            blogs[author][id].report++;
+            reportedBlogs[msg.sender].push(id)
+            emit BlogReported(msg.sender, author, id, blogs[author][id].report);
+
+        }
+
+
+
     }
 
     function unlikeBlog(address author, uint256 id) external onlyRegistered {
         require(blogs[author][id].id == id, "BLOG DOES NOT EXIST");
         require(blogs[author][id].likes > 0, "BLOG HAS NO LIKES");
+        require(author!=profiles[msg.sender], "creator cant like the post")
+        bool memory alreadyUnliked=false
+
+        for (uint i = 0; i < unlikedBlogs[msg.sender].length; i++) {
+            if (unlikedBlogs[msg.sender][i] == id) {
+                alreadyUnliked=true;
+            }
+        }
+        require(!alreadyUnliked,"Blog cant be Unliked again")
+
+
         
         blogs[author][id].likes--;
+        unlikedBlogs[msg.sender].push(id);
 
         emit BlogUnliked(msg.sender, author, id, blogs[author][id].likes );
     }
