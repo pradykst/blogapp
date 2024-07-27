@@ -41,7 +41,7 @@ contract BlogApp {
     event BlogLiked(address liker, address blogAuthor, uint256 blogId, uint256 newLikeCount);
     event BlogReported(address reporter, address blogAuthor, uint256 blogId, uint256 newReportCount);
     event BlogUnliked(address unliker, address blogAuthor, uint256 blogId, uint256 newLikeCount);
-    event BlogDeleted(address deleter, address blogAuthor, uint256 blogId)
+    event BlogDeleted(address deleter, address blogAuthor, uint256 blogId);
 
     constructor() {
         owner = msg.sender;
@@ -95,15 +95,15 @@ contract BlogApp {
 
     function likeBlog(address author, uint256 id) external onlyRegistered {  
         require(blogs[author][id].id == id, "BLOG DOES NOT EXIST");
-        require(author!=profiles[msg.sender], "creator cant like the post")
-        bool memory alreadyLiked=false
+        require(author!=msg.sender, "creator cant like the post");
+        bool alreadyLiked=false;
 
         for (uint i = 0; i < likedBlogs[msg.sender].length; i++) {
             if (likedBlogs[msg.sender][i] == id) {
                 alreadyLiked=true;
             }
         }
-        require(!alreadyLiked,"Blog cant be liked again")
+        require(!alreadyLiked,"Blog cant be liked again");
         
 
 
@@ -116,24 +116,24 @@ contract BlogApp {
 
     function reportBlog(address author, uint256 id) external onlyRegistered {  
         require(blogs[author][id].id == id, "BLOG DOES NOT EXIST");
-        require(author!=profiles[msg.sender], "creator cant like the post")
-        bool memory alreadyReported=false
+        require(author!=msg.sender, "creator cant like the post");
+        bool alreadyReported=false;
 
         for (uint i = 0; i < reportedBlogs[msg.sender].length; i++) {
             if (reportedBlogs[msg.sender][i] == id) {
                 alreadyReported=true;
             }
         }
-        require(!alreadyReported,"Blog cant be reported again")
+        require(!alreadyReported,"Blog cant be reported again");
 
         if(blogs[author][id].report>=MAX_REPORTS){
-            delete blogs[author][id]
+            delete blogs[author][id];
             emit BlogDeleted(msg.sender, author, id);  //see
         }
 
         else{
             blogs[author][id].report++;
-            reportedBlogs[msg.sender].push(id)
+            reportedBlogs[msg.sender].push(id);
             emit BlogReported(msg.sender, author, id, blogs[author][id].report);
 
         }
@@ -145,15 +145,15 @@ contract BlogApp {
     function unlikeBlog(address author, uint256 id) external onlyRegistered {
         require(blogs[author][id].id == id, "BLOG DOES NOT EXIST");
         require(blogs[author][id].likes > 0, "BLOG HAS NO LIKES");
-        require(author!=profiles[msg.sender], "creator cant like the post")
-        bool memory alreadyUnliked=false
+        require(author!=msg.sender, "creator cant like the post");
+        bool alreadyUnliked=false;
 
         for (uint i = 0; i < unlikedBlogs[msg.sender].length; i++) {
             if (unlikedBlogs[msg.sender][i] == id) {
                 alreadyUnliked=true;
             }
         }
-        require(!alreadyUnliked,"Blog cant be Unliked again")
+        require(!alreadyUnliked,"Blog cant be Unliked again");
 
 
         
